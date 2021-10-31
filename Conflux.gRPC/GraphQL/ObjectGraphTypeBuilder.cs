@@ -61,7 +61,7 @@ namespace GraphQL.SchemaGenerator
 
 		private static IEnumerable<PropertyInfo> GetProperties(bool hasDataContract, Type type)
 		{
-			var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(p => p.CanRead && p.CanWrite);
+			var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 			if (hasDataContract)
 			{
 				return properties.Where(p => p.ShouldIncludeMemberInGraph());
