@@ -14,6 +14,7 @@
 	using System.Collections.Generic;
 	using GraphQL.Instrumentation;
 	using Example;
+	using GraphQL.DI;
 
 	public static class ServiceCollectionExtension
 	{
@@ -27,7 +28,7 @@
 			// add execution components
 			services.AddGraphQL()
 				.AddSystemTextJson()
-				.AddSchema(schema)
+				.AddSchemaWithType(schema)           
 				.ConfigureSchema((schema, serviceProvider) =>
 				{
 					// install middleware only when the custom EnableMetrics option is set
@@ -50,6 +51,16 @@
 			//	.WithSubscription<GraphQl.Subscription>()
 			//	.BuildSchema();
 			return services;
+		}
+
+		private static IGraphQLBuilder AddSchemaWithType(this IGraphQLBuilder builder, ISchema schema)
+		{
+			if (schema != null)
+			{
+				builder.AddSchema(schema);
+			}
+
+			return builder;
 		}
 
 		public static IApplicationBuilder UseConfluxGRPC(this IApplicationBuilder app)

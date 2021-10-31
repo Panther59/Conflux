@@ -12,6 +12,11 @@ namespace GraphQL.SchemaGenerator
     {
         public static Type ConvertTypeToGraphType(Type propertyType, RequiredType requiredType = RequiredType.Default, bool isInputType = false)
         {
+            if (propertyType == null)
+            {
+                return null;
+            }
+
             if (typeof(GraphType).IsAssignableFrom(propertyType))
             {
                 return propertyType;
@@ -62,7 +67,7 @@ namespace GraphQL.SchemaGenerator
         /// <exception cref="NotSupportedException">Cannot support IEnumerable when wrapping an object with GraphQL</exception>
         private static Type BaseGraphType(Type propertyType, bool isInputType = false)
         {
-            if (propertyType == typeof(EnumValues))
+            if (propertyType == typeof(EnumValues) || propertyType == typeof(Google.Protobuf.WellKnownTypes.Enum) || propertyType == typeof(Google.Protobuf.WellKnownTypes.EnumValue))
             {
                 return typeof(EnumerationGraphType);
             }
@@ -77,7 +82,7 @@ namespace GraphQL.SchemaGenerator
                 return null;
             }
 
-            if (propertyType == typeof(string) ||
+            if (propertyType == typeof(string) || propertyType == typeof(Google.Protobuf.ByteString) || propertyType == typeof(Google.Protobuf.WellKnownTypes.StringValue) || 
                 propertyType == typeof(char))
             {
                 return typeof(StringGraphType);
@@ -88,23 +93,23 @@ namespace GraphQL.SchemaGenerator
                 return typeof(StringGraphType);
             }
 
-            if (IsIntegerType(propertyType))
+            if (IsIntegerType(propertyType) || propertyType == typeof(Google.Protobuf.WellKnownTypes.Int32Value))
             {
                 return typeof(IntGraphType);
             }
 
-            if (IsDecimalType(propertyType))
+            if (IsDecimalType(propertyType) || propertyType == typeof(Google.Protobuf.WellKnownTypes.DoubleValue))
             {
                 return typeof(DecimalGraphType);
             }
 
-            if (propertyType == typeof(bool))
+            if (propertyType == typeof(bool) || propertyType == typeof(Google.Protobuf.WellKnownTypes.BoolValue))
             {
                 return typeof(BooleanGraphType);
             }
 
             if (propertyType == typeof(DateTime)
-                || propertyType == typeof(DateTimeOffset))
+                || propertyType == typeof(DateTimeOffset) || propertyType == typeof(Google.Protobuf.WellKnownTypes.Timestamp))
             {
                 return typeof(OriginalDateGraphType);
             }
@@ -120,7 +125,7 @@ namespace GraphQL.SchemaGenerator
                 return typeof(TimeSpanGraphType);
             }
 
-            if (propertyType == typeof(byte[]))
+            if (propertyType == typeof(byte[]) || propertyType == typeof(Google.Protobuf.WellKnownTypes.BytesValue))
             {
                 return typeof(ByteArrayGraphType);
             }
@@ -144,7 +149,7 @@ namespace GraphQL.SchemaGenerator
                 return typeof(ListGraphType<>).MakeGenericType(keyValuePairGraphType);
             }
 
-            if (propertyType.IsArray)
+            if (propertyType.IsArray || propertyType == typeof(Google.Protobuf.Collections.RepeatedField<>))
             {
                 var itemType = propertyType.GetElementType();
                 var itemGraphType = ConvertTypeToGraphType(itemType, isInputType: isInputType);

@@ -40,7 +40,7 @@ namespace Example
 
         private bool IsGraphQLRequest(HttpContext context)
         {
-            return context.Request.Path.StartsWithSegments("/ui/playground")
+            return (context.Request.Path.StartsWithSegments("/graphql"))
                 && string.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase);
         }
 
