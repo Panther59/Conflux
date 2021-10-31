@@ -18,17 +18,17 @@
 
 	public static class ServiceCollectionExtension
 	{
-		public static IServiceCollection AddConfluxGRPC(this IServiceCollection services, System.Type type)
+		public static IServiceCollection AddConfluxGRPC(this IServiceCollection services, GrpcService service)
 		{
 			//var typeAdapter = new GraphTypeAdapter();
 			//var constructor = new SchemaConstructor<ISchema, IGraphType>(typeAdapter);
-			SchemaGenerator schemaGenerator = new SchemaGenerator(services.BuildServiceProvider());
-			var schema = schemaGenerator.CreateSchema(type);
-
+			//SchemaGenerator schemaGenerator = new SchemaGenerator(services.BuildServiceProvider());
+			//var schema = schemaGenerator.CreateSchema(type);
+			services.AddSingleton<ISchemaGenerator, SchemaGenerator>();
 			// add execution components
 			services.AddGraphQL()
 				.AddSystemTextJson()
-				.AddSchemaWithType(schema)           
+				.AddSchemaWithType(service)
 				.ConfigureSchema((schema, serviceProvider) =>
 				{
 					// install middleware only when the custom EnableMetrics option is set
@@ -53,13 +53,14 @@
 			return services;
 		}
 
-		private static IGraphQLBuilder AddSchemaWithType(this IGraphQLBuilder builder, ISchema schema)
+		private static IGraphQLBuilder AddSchemaWithType(this IGraphQLBuilder builder, GrpcService service)
 		{
-			if (schema != null)
+			builder.AddSchema<ISchema>((serviceProvider) =>
 			{
-				builder.AddSchema(schema);
-			}
-
+				var schemaGenerator = serviceProvider.GetService<ISchemaGenerator>();
+				var schema = schemaGenerator.CreateSchema(service.Name, service.Type);
+				return schema;
+			}, GraphQL.DI.ServiceLifetime.Transient);
 			return builder;
 		}
 

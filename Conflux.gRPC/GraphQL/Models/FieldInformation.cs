@@ -22,7 +22,7 @@ namespace GraphQL.SchemaGenerator.Models
         /// <summary>
         ///     Query arguments.
         /// </summary>
-        public QueryArguments Arguments { get; set; }
+        public GraphQLQueryArguments Arguments { get; set; }
 
         /// <summary>
         ///     Is a mutation.
@@ -38,5 +38,6 @@ namespace GraphQL.SchemaGenerator.Models
         ///     The obsolete attribute message if any.
         /// </summary>
         public string ObsoleteReason { get; set; }
-    }
+		public Type Grpc { get; internal set; }
+	}
 }

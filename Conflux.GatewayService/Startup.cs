@@ -1,5 +1,6 @@
 using Conflux.Extensions;
 using Conflux.gRPC;
+using Conflux.gRPCServices.greet;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -29,20 +30,13 @@ namespace Conflux.GatewayService
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public void ConfigureServices(IServiceCollection services)
 		{
-			var type = typeof(GraphQL.Types.QueryArgument<GraphQL.SchemaGenerator.Wrappers.InputObjectGraphTypeWrapper<Conflux.gRPCServices.greet.HelloRequest>>);
-			var type1 = typeof(GraphQL.SchemaGenerator.Wrappers.InputObjectGraphTypeWrapper<Conflux.gRPCServices.greet.HelloRequest>);
-			var type2 = typeof(Conflux.gRPCServices.greet.HelloRequest);
-			var obj = Activator.CreateInstance(type);
-			var obj2 = Activator.CreateInstance(type1);
-			var obj3 = Activator.CreateInstance(type2);
-			var q = new GraphQL.Types.QueryArgument(type1);
 			services.AddConflux();
-			services.AddConfluxGRPC(typeof(GreeterBase));
+			services.AddConfluxGRPC(new GrpcService("Greeter", typeof(Greeter)));
 			services.AddControllers();
 
-			services.AddGrpcClient<GreeterBase>("Greeter", o =>
+			services.AddHttpClient("Greeter", o =>
 			{
-				o.Address = new Uri("https://localhost:6001");
+				o.BaseAddress = new Uri("https://localhost:6001");
 			});
 
 			services.AddSwaggerGen(c =>
