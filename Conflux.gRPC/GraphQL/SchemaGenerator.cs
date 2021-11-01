@@ -117,30 +117,24 @@ namespace GraphQL.SchemaGenerator
 					nameof(AsyncUnaryCall<object>.ResponseAsync)),
 				requestParamExp,
 				optionsParamExp).Compile();
-			//var client = new Greeter.GreeterClient(channel);
-			//var reply = await client.SayHelloAsync(
-			//				  new HelloRequest { Name = "GreeterClient" });
-			//Console.WriteLine("Greeting: " + reply.Message);
-			//Console.WriteLine("Press any key to exit...");
-			//Console.ReadKey();
 			await Task.Delay(1);
-			var classObject = ServiceProvider.GetService(field.Method.DeclaringType);
+			var input = context.GetArgument(field.Arguments[0].BaseType, "request");
 			var parameters = context.Parameters(field);
 			//// Add code to convert message
 			
 			var callOPtions = new CallOptions();
-			//if (classObject == null)
-			//	throw new Exception($"Can't resolve class from: {field.Method.DeclaringType}");
+			if (input == null)
+				throw new Exception($"Can't resolve class from: {field.Arguments[0].BaseType}");
 
 			try
 			{
 				var req = Activator.CreateInstance(field.Arguments[0].BaseType);
-				var resultTask = grpcMethodExecutor.Invoke(req, callOPtions);
+				var resultTask = grpcMethodExecutor.Invoke(input, callOPtions);
 				await resultTask.ConfigureAwait(false);
 
 				//var result = field.Method.Invoke(classObject, parameters);
 
-				return resultTask;
+				return ((dynamic)resultTask).Result;
 			}
 			catch (Exception ex)
 			{

@@ -28,7 +28,7 @@ namespace GraphQL.SchemaGenerator
 			// KnownTypeAttribute could be used when SchemaType and DomainType are the same
 			ProcessType(graphType, type);
 			ProcessProperties(graphType, GetProperties(hasDataContract, type));
-			ProcessFields(graphType, GetFields(hasDataContract, type));
+			//ProcessFields(graphType, GetFields(hasDataContract, type));
 			ProcessMethods(graphType, type, type.GetMethods());
 		}
 
@@ -46,7 +46,7 @@ namespace GraphQL.SchemaGenerator
 			// KnownTypeAttribute could be used when SchemaType and DomainType are the same
 			ProcessType(graphType, type);
 			ProcessProperties(graphType, GetProperties(hasDataContract, type));
-			ProcessFields(graphType, GetFields(hasDataContract, type));
+			//ProcessFields(graphType, GetFields(hasDataContract, type));
 			ProcessMethods(graphType, type, type.GetMethods());
 		}
 
@@ -55,7 +55,7 @@ namespace GraphQL.SchemaGenerator
 			ProcessType(graphType, type);
 			bool hasDataContract = type.ShouldIncludeInGraph();
 			ProcessProperties(graphType, GetProperties(hasDataContract, type), true);
-			ProcessFields(graphType, GetFields(hasDataContract, type), true);
+			//ProcessFields(graphType, GetFields(hasDataContract, type), true);
 			ProcessMethods(graphType, type, type.GetMethods());
 		}
 
