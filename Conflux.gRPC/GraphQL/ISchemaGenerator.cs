@@ -9,6 +9,6 @@ namespace GraphQL.SchemaGenerator
 	{
 		IEnumerable<FieldDefinition> CreateDefinitions(string name, params Type[] types);
 		GraphQL.Types.Schema CreateSchema(string name, params Type[] types);
-		Task<object> ResolveField(IResolveFieldContext<object> context, string name, FieldInformation field);
+		Task<object> ResolveField(IResolveFieldContext<object> context, FieldInformation field);
 	}
 }

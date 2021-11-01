@@ -1,28 +1,74 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Net.Http;
-using System.Reflection;
-using System.Threading.Tasks;
-using Google.Protobuf;
-using GraphQL.SchemaGenerator.Attributes;
-using GraphQL.SchemaGenerator.Extensions;
-using GraphQL.SchemaGenerator.Helpers;
-using GraphQL.SchemaGenerator.Models;
-using GraphQL.Types;
-using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace GraphQL.SchemaGenerator
+﻿namespace GraphQL.SchemaGenerator
 {
+	using Conflux.gRPC.Grpc;
+	using GraphQL.SchemaGenerator.Extensions;
+	using GraphQL.SchemaGenerator.Helpers;
+	using GraphQL.SchemaGenerator.Models;
+	using GraphQL.Types;
+	using Grpc.Core;
+	using Grpc.Net.Client;
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Linq.Expressions;
+	using System.Net.Http;
+	using System.Reflection;
+	using System.Threading.Tasks;
+
 	/// <summary>
 	///     Dynamically provides graph ql schema information.
 	/// </summary>
 	public class SchemaGenerator : ISchemaGenerator
 	{
-		private readonly IHttpClientFactory httpClientFactory;
+		private readonly IGrpcServiceMethodExecutor grpcServiceMethodExecutor;
+
+		public SchemaGenerator(IServiceProvider serviceProvider, IGrpcServiceMethodExecutor grpcServiceMethodExecutor)
+		{
+			ServiceProvider = serviceProvider;
+			this.grpcServiceMethodExecutor = grpcServiceMethodExecutor;
+			TypeResolver = new GraphTypeResolver();
+		}
+
+		private IServiceProvider ServiceProvider { get; }
+
+		private IGraphTypeResolver TypeResolver { get; }
+
+		/// <summary>
+		///     Dynamically create query arguments.
+		/// </summary>
+		public static GraphQLQueryArguments CreateArguments(IEnumerable<ParameterInfo> parameters)
+		{
+			var arguments = new List<GraphQLQueryArgument>();
+
+			foreach (var parameter in parameters)
+			{
+				var argument = CreateArgument(parameter);
+				arguments.Add(argument);
+			}
+
+			return new GraphQLQueryArguments(arguments);
+		}
+
+		/// <summary>
+		///     Ensure graph type. Can return null if the type can't be used.
+		/// </summary>
+		/// <param name="parameterType"></param>
+		/// <returns></returns>
+		public static Type EnsureGraphType(Type parameterType)
+		{
+			if (parameterType == null || parameterType == typeof(void))
+				return typeof(StringGraphType);
+
+			if (typeof(GraphType).IsAssignableFrom(parameterType))
+				return parameterType;
+
+			var type = GraphTypeConverter.ConvertTypeToGraphType(parameterType);
+
+			if (type == null)
+				type = typeof(ScalarGraphType);
+
+			return type;
+		}
 
 		/// <summary>
 		///     Create field definitions based off a type.
@@ -58,6 +104,7 @@ namespace GraphQL.SchemaGenerator
 
 					var field = new FieldInformation
 					{
+						ServiceName = name,
 						IsMutation = false,
 						Arguments = arguments,
 						Name =
@@ -70,88 +117,13 @@ namespace GraphQL.SchemaGenerator
 						ObsoleteReason = TypeHelper.GetDeprecationReason(method)
 					};
 
-					var definition = new FieldDefinition(field, context => ResolveField(context, name, field));
+					var definition = new FieldDefinition(field, context => ResolveField(context, field));
 
 					definitions.Add(definition);
 				}
 			}
 
 			return definitions;
-		}
-
-		private Type ExtractBaseType(Type grpcType, string name)
-		{
-			var type = grpcType.GetNestedType($"{name}Base");
-			return type;
-		}
-
-		/// <summary>
-		///     Resolve the value from a field.
-		/// </summary>
-		public async Task<object> ResolveField(IResolveFieldContext<object> context, string name, FieldInformation field)
-		{
-			var nameOfClass = field.Method.DeclaringType.Name.Split("+").Last();
-			var grpcClientType = field.Grpc.GetNestedType($"{name}Client");
-			var httpClient = httpClientFactory.CreateClient(name);
-
-			var grpcChannel = GrpcChannel.ForAddress(
-				httpClient.BaseAddress,
-				new GrpcChannelOptions
-				{
-					HttpClient = httpClient,
-					MaxSendMessageSize = 50 * 1024 * 1024,
-					MaxReceiveMessageSize = 50 * 1024 * 1024,
-				});
-
-			var grpcClient = (ClientBase)Activator.CreateInstance(grpcClientType, grpcChannel);
-			//var grpcClient = ServiceProvider.GetService(field.Method.DeclaringType);
-			var grpcMethod = grpcClient.GetType().GetMethod($"{field.Name}Async", new[] { field.Arguments[0].BaseType, typeof(CallOptions) });
-			var grpcClientExp = Expression.Constant(grpcClient);
-			var requestParamExp = Expression.Parameter(typeof(object));
-			var castRequestParamExp = Expression.Convert(requestParamExp, field.Arguments[0].BaseType);
-			var optionsParamExp = Expression.Parameter(typeof(CallOptions));
-
-			var grpcMethodExecutor = Expression.Lambda<Func<object, CallOptions, Task>>(
-				Expression.Property(
-					Expression.Call(grpcClientExp, grpcMethod, castRequestParamExp, optionsParamExp),
-					nameof(AsyncUnaryCall<object>.ResponseAsync)),
-				requestParamExp,
-				optionsParamExp).Compile();
-			await Task.Delay(1);
-			var input = context.GetArgument(field.Arguments[0].BaseType, "request");
-			var parameters = context.Parameters(field);
-			//// Add code to convert message
-			
-			var callOPtions = new CallOptions();
-			if (input == null)
-				throw new Exception($"Can't resolve class from: {field.Arguments[0].BaseType}");
-
-			try
-			{
-				var req = Activator.CreateInstance(field.Arguments[0].BaseType);
-				var resultTask = grpcMethodExecutor.Invoke(input, callOPtions);
-				await resultTask.ConfigureAwait(false);
-
-				//var result = field.Method.Invoke(classObject, parameters);
-
-				return ((dynamic)resultTask).Result;
-			}
-			catch (Exception ex)
-			{
-				var stringParams = parameters?.ToList().Select(t => string.Concat(t.ToString(), ":"));
-
-				throw new Exception($"Cant invoke {field.Method.DeclaringType} with parameters {stringParams}", ex);
-			}
-		}
-
-		/// <summary>
-		///     Helper method to create schema from types.
-		/// </summary>
-		/// <param name="types"></param>
-		/// <returns></returns>
-		public GraphQL.Types.Schema CreateSchema(string name, params Type[] types)
-		{
-			return CreateSchema(CreateDefinitions(name, types));
 		}
 
 		/// <summary>
@@ -204,42 +176,22 @@ namespace GraphQL.SchemaGenerator
 		}
 
 		/// <summary>
-		///     Ensure graph type. Can return null if the type can't be used.
+		///     Helper method to create schema from types.
 		/// </summary>
-		/// <param name="parameterType"></param>
+		/// <param name="types"></param>
 		/// <returns></returns>
-		public static Type EnsureGraphType(Type parameterType)
+		public GraphQL.Types.Schema CreateSchema(string name, params Type[] types)
 		{
-			if (parameterType == null || parameterType == typeof(void))
-				return typeof(StringGraphType);
-
-			if (typeof(GraphType).IsAssignableFrom(parameterType))
-				return parameterType;
-
-			var type = GraphTypeConverter.ConvertTypeToGraphType(parameterType);
-
-			if (type == null)
-				type = typeof(ScalarGraphType);
-
-			return type;
+			return CreateSchema(CreateDefinitions(name, types));
 		}
 
 		/// <summary>
-		///     Dynamically create query arguments.
+		///     Resolve the value from a field.
 		/// </summary>
-		public static GraphQLQueryArguments CreateArguments(IEnumerable<ParameterInfo> parameters)
+		public async Task<object> ResolveField(IResolveFieldContext<object> context, FieldInformation field)
 		{
-			var arguments = new List<GraphQLQueryArgument>();
-
-			foreach (var parameter in parameters)
-			{
-				var argument = CreateArgument(parameter);
-				arguments.Add(argument);
-			}
-
-			return new GraphQLQueryArguments(arguments);
+			return await this.grpcServiceMethodExecutor.ExecuteServiceMethodAsync(context, field);
 		}
-
 
 		private static GraphQLQueryArgument CreateArgument(ParameterInfo parameter)
 		{
@@ -251,6 +203,13 @@ namespace GraphQL.SchemaGenerator
 			return argument;
 		}
 
+		private static Type GetGraphQLArgumentType(Type parameterType)
+		{
+			var requestType = GraphTypeConverter.ConvertTypeToGraphType(parameterType, RequiredType.NotRequired, true);
+
+			return requestType;
+		}
+
 		private static Type GetRequestArgumentType(Type parameterType)
 		{
 			var requestType = GraphTypeConverter.ConvertTypeToGraphType(parameterType, RequiredType.NotRequired, true);
@@ -259,25 +218,10 @@ namespace GraphQL.SchemaGenerator
 			return requestArgumentType;
 		}
 
-		private static Type GetGraphQLArgumentType(Type parameterType)
+		private Type ExtractBaseType(Type grpcType, string name)
 		{
-			var requestType = GraphTypeConverter.ConvertTypeToGraphType(parameterType, RequiredType.NotRequired, true);
-
-			return requestType;
+			var type = grpcType.GetNestedType($"{name}Base");
+			return type;
 		}
-
-		#region Dependencies
-
-		private IServiceProvider ServiceProvider { get; }
-		private IGraphTypeResolver TypeResolver { get; }
-
-		public SchemaGenerator(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
-		{
-			ServiceProvider = serviceProvider;
-			this.httpClientFactory = httpClientFactory;
-			TypeResolver = new GraphTypeResolver();
-		}
-
-		#endregion
 	}
 }

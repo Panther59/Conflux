@@ -15,6 +15,7 @@
 	using GraphQL.Instrumentation;
 	using Example;
 	using GraphQL.DI;
+	using Conflux.gRPC.Grpc;
 
 	public static class ServiceCollectionExtension
 	{
@@ -25,6 +26,7 @@
 			//SchemaGenerator schemaGenerator = new SchemaGenerator(services.BuildServiceProvider());
 			//var schema = schemaGenerator.CreateSchema(type);
 			services.AddSingleton<ISchemaGenerator, SchemaGenerator>();
+			services.AddSingleton<IGrpcServiceMethodExecutor, GrpcServiceMethodExecutor>();
 			// add execution components
 			services.AddGraphQL()
 				.AddSystemTextJson()

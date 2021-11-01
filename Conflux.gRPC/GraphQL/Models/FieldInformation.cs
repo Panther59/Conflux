@@ -39,5 +39,6 @@ namespace GraphQL.SchemaGenerator.Models
         /// </summary>
         public string ObsoleteReason { get; set; }
 		public Type Grpc { get; internal set; }
+		public string ServiceName { get; internal set; }
 	}
 }
