@@ -20,7 +20,8 @@ namespace Conflux.gRPCService
 		{
 			return Task.FromResult(new HelloReply
 			{
-				Message = "Hello " + request.Name
+				Message = "Hello " + request.Name,
+				Child = new ChildReply { Name = $"Child {request.Child.Name}" }
 			});
 		}
 	}
