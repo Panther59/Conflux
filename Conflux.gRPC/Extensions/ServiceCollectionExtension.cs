@@ -1,6 +1,5 @@
 ﻿namespace Conflux.gRPC
 {
-	using GraphQL.SchemaGenerator;
 	using Microsoft.Extensions.DependencyInjection;
 	using System;
 	using System.Reflection;
@@ -16,6 +15,9 @@
 	using Example;
 	using GraphQL.DI;
 	using Conflux.gRPC.Grpc;
+	using GraphQL.SchemaGenerator;
+	using Conflux.Graphql;
+	using Conflux.Extensions;
 
 	public static class ServiceCollectionExtension
 	{
@@ -25,8 +27,9 @@
 			//var constructor = new SchemaConstructor<ISchema, IGraphType>(typeAdapter);
 			//SchemaGenerator schemaGenerator = new SchemaGenerator(services.BuildServiceProvider());
 			//var schema = schemaGenerator.CreateSchema(type);
-			services.AddSingleton<ISchemaGenerator, SchemaGenerator>();
+			services.AddSingleton<ISchemaGenerator,SchemaGenerator>();
 			services.AddSingleton<IGrpcServiceMethodExecutor, GrpcServiceMethodExecutor>();
+			services.AddAdditionalGraphTypeConverter<AdditionalGraphTypeConverter>();
 			// add execution components
 			services.AddGraphQL()
 				.AddSystemTextJson()

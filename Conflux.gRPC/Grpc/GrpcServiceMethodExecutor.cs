@@ -1,15 +1,15 @@
 ﻿namespace Conflux.gRPC.Grpc
 {
+	using Conflux.Graphql.Models;
 	using global::Grpc.Core;
 	using global::Grpc.Net.Client;
 	using GraphQL;
-	using GraphQL.SchemaGenerator.Extensions;
-	using GraphQL.SchemaGenerator.Models;
 	using System;
 	using System.Linq;
 	using System.Linq.Expressions;
 	using System.Net.Http;
 	using System.Threading.Tasks;
+	using Conflux.Graphql.Extensions;
 
 	public class GrpcServiceMethodExecutor : IGrpcServiceMethodExecutor
 	{

@@ -1,11 +1,9 @@
-﻿using GraphQL;
-using GraphQL.SchemaGenerator.Models;
-using Grpc.Core;
-using System;
-using System.Threading.Tasks;
-
-namespace Conflux.gRPC.Grpc
+﻿namespace Conflux.gRPC.Grpc
 {
+	using Conflux.Graphql.Models;
+	using GraphQL;
+	using System.Threading.Tasks;
+
 	public interface IGrpcServiceMethodExecutor
 	{
 		Task<object> ExecuteServiceMethodAsync(IResolveFieldContext<object> context, FieldInformation field);
