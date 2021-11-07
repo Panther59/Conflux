@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="Grpc.AspNetCore" Version="2.40.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.40.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.41.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="proto\custom_options.proto" GrpcServices="Client">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Protobuf>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="proto\**" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+
+</Project>

@@ -166,7 +166,7 @@
 
 			
 
-			if (propertyType.IsAssignableToGenericType(typeof(IEnumerable<>)))
+			if (propertyType.IsAssignableToGenericType(typeof(IEnumerable<>)) && propertyType.GetGenericArguments().Length > 0)
 			{
 				var itemType = propertyType.GetGenericArguments()[0];
 				var itemGraphType = ConvertTypeToGraphType(itemType, isInputType: isInputType);

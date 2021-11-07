@@ -40,13 +40,13 @@
 			{
 				var stringParams = parameters?.ToList().Select(t => string.Concat(t.ToString(), ":"));
 
-				throw new Exception($"Cant invoke {field.Method.DeclaringType} with parameters {stringParams}", ex);
+				throw new Exception($"Cant invoke {field.Name} with parameters {stringParams}", ex);
 			}
 		}
 
 		private object GetGrpcRequestObject(IResolveFieldContext<object> context, FieldInformation field)
 		{
-			var input = context.GetArgument(field.Arguments[0].BaseType, "request");
+			var input = context.GetArgument(field.Arguments[0].BaseType, field.Arguments[0].Name);
 
 			if (input == null)
 				throw new Exception($"Can't resolve class from: {field.Arguments[0].BaseType}");

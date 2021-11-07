@@ -18,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Conflux.gRPCService", "Conf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Conflux.gRPC", "Conflux.gRPC\Conflux.gRPC.csproj", "{5132137A-45C0-4B03-9984-BCDDE395E3E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.gRPC.Client", "Conflux.gRPC.Client\Conflux.gRPC.Client.csproj", "{D1CA2095-CD34-4A0D-A762-AE70A40FE806}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{5132137A-45C0-4B03-9984-BCDDE395E3E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5132137A-45C0-4B03-9984-BCDDE395E3E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5132137A-45C0-4B03-9984-BCDDE395E3E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1CA2095-CD34-4A0D-A762-AE70A40FE806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1CA2095-CD34-4A0D-A762-AE70A40FE806}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1CA2095-CD34-4A0D-A762-AE70A40FE806}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1CA2095-CD34-4A0D-A762-AE70A40FE806}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

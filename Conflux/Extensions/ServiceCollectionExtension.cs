@@ -5,6 +5,7 @@
 	using GraphQL.Instrumentation;
 	using GraphQL.MicrosoftDI;
 	using GraphQL.SystemTextJson;
+	using Microsoft.AspNetCore.Builder;
 	using Microsoft.Extensions.DependencyInjection;
 	using System.Collections.Generic;
 	using System.Linq;

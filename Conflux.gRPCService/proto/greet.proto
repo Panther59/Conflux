@@ -1,13 +1,18 @@
 syntax = "proto3";
 
 option csharp_namespace = "Conflux.gRPCServices.greet";
+import "proto/custom_options.proto";
 
 package greet;
 
 // The greeting service definition.
 service Greeter {
   // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply);
+  rpc SayHello (HelloRequest) returns (HelloReply){
+    option (rpc_method_options).method_type = QUERY;
+    option (rpc_method_options).response_cache_duration.seconds = 36000;
+  }
+
     rpc GetJokes (GetJokesRequest) returns (GetJokesResponse);
 }
 

@@ -1,0 +1,38 @@
+﻿syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/duration.proto";
+
+extend google.protobuf.MethodOptions {
+	RpcMethodOptions rpc_method_options = 50000;
+}
+
+message RpcMethodOptions {
+	MethodType method_type = 1;
+	string permissions = 2;
+	string external_method_name = 3;
+	bool is_internal_only = 4;
+	google.protobuf.Duration response_cache_duration = 5;
+
+	enum MethodType {
+		UNSPECIFIED = 0;
+		QUERY = 1;
+		MUTATION = 2;
+	}
+}
+
+extend google.protobuf.FieldOptions {
+	RpcFieldOptions rpc_field_options = 50001;
+}
+
+message RpcFieldOptions {
+	Required required = 1;
+	bool expose_as_id = 2;
+	
+	enum Required {
+		NEVER = 0;
+		ALWAYS = 1;
+		INPUT_ONLY = 2;
+		OUTPUT_ONLY = 3;
+	}
+}

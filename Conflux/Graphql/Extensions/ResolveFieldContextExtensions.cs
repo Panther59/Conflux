@@ -26,9 +26,9 @@ namespace Conflux.Graphql.Extensions
 			}
 
 			var routeArguments = new List<object>();
-			foreach (var parameter in field.Method.GetParameters())
+			foreach (GraphQLQueryArgument queryArg in field.Arguments)
 			{
-				if (!type.Arguments.TryGetValue(parameter.Name, out var arg))
+				if (!type.Arguments.TryGetValue(queryArg.Name, out var arg))
 				{
 					routeArguments.Add(null);
 					continue;
@@ -47,15 +47,15 @@ namespace Conflux.Graphql.Extensions
 					try
 					{
 						var json = JsonConvert.SerializeObject(arg);
-						arg = new GraphQL.Execution.ArgumentValue(JsonConvert.DeserializeObject(json, parameter.ParameterType), arg.Source);
+						arg = new GraphQL.Execution.ArgumentValue(JsonConvert.DeserializeObject(json, queryArg.BaseType), arg.Source);
 					}
 					catch
 					{
 						var json = JsonConvert.SerializeObject(arg, new DeepDictionaryRequest());
-						arg = new GraphQL.Execution.ArgumentValue(JsonConvert.DeserializeObject(json, parameter.ParameterType), arg.Source);
+						arg = new GraphQL.Execution.ArgumentValue(JsonConvert.DeserializeObject(json, queryArg.BaseType), arg.Source);
 					}
 				}
-				else if (parameter.ParameterType == typeof(char))
+				else if (queryArg.BaseType == typeof(char))
 				{
 					arg = new GraphQL.Execution.ArgumentValue(arg.ToString()[0], arg.Source);
 				}

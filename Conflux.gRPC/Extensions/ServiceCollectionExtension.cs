@@ -23,11 +23,7 @@
 	{
 		public static IServiceCollection AddConfluxGRPC(this IServiceCollection services, GrpcService service)
 		{
-			//var typeAdapter = new GraphTypeAdapter();
-			//var constructor = new SchemaConstructor<ISchema, IGraphType>(typeAdapter);
-			//SchemaGenerator schemaGenerator = new SchemaGenerator(services.BuildServiceProvider());
-			//var schema = schemaGenerator.CreateSchema(type);
-			services.AddSingleton<ISchemaGenerator,SchemaGenerator>();
+			services.AddSingleton<ISchemaGenerator, GrpcToGrpahQLSchemaGenerator>();
 			services.AddSingleton<IGrpcServiceMethodExecutor, GrpcServiceMethodExecutor>();
 			services.AddAdditionalGraphTypeConverter<AdditionalGraphTypeConverter>();
 			// add execution components
@@ -42,19 +38,6 @@
 						schema.FieldMiddleware.Use(middleware);
 				});
 
-			//// writes all the property names
-			//foreach (MethodInfo methodInfo in methodInfos)
-			//{
-			//	Console.WriteLine($"{methodInfo.Name}");
-			//	//Response.Write(methodInfo.Name + "<br/>");
-			//}
-			//var schema = constructor.Build(typeof(SchemaDefinition<GraphQl.Query, GraphQl.Mutation, GraphQl.Subscription>));
-			//var graphQLEngine = new GraphQLEngine()
-			//	.WithFieldResolutionStrategy(FieldResolutionStrategy.Normal)
-			//	.WithQuery<GraphQl.Query>()
-			//	.WithMutation<GraphQl.Mutation>()
-			//	.WithSubscription<GraphQl.Subscription>()
-			//	.BuildSchema();
 			return services;
 		}
 
@@ -72,7 +55,7 @@
 		public static IApplicationBuilder UseConfluxGRPC(this IApplicationBuilder app)
 		{
 			app.UseMiddleware<GraphQLMiddleware>();
-			app.UseGraphQLPlayground("/ui/playground");
+			app.UseGraphQLPlayground("/playground");
 
 			return app;
 		}

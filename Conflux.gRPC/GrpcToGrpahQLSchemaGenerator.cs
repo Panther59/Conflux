@@ -5,7 +5,9 @@
 	using Conflux.Graphql.Helpers;
 	using Conflux.Graphql.Models;
 	using Conflux.Graphql.Wrappers;
+	using Conflux.gRPC.Extensions;
 	using Conflux.gRPC.Grpc;
+	using Google.Protobuf.Reflection;
 	using GraphQL.Types;
 	using Grpc.Core;
 	using Grpc.Net.Client;
@@ -20,14 +22,14 @@
 	/// <summary>
 	///     Dynamically provides graph ql schema information.
 	/// </summary>
-	public class SchemaGenerator : ISchemaGenerator
+	public class GrpcToGrpahQLSchemaGenerator : ISchemaGenerator
 	{
 		private readonly IGraphTypeConverter graphTypeConverter;
 		private readonly IObjectGraphTypeBuilder objectGraphTypeBuilder;
 		private readonly IGrpcServiceMethodExecutor grpcServiceMethodExecutor;
 
-		public SchemaGenerator(
-			IServiceProvider serviceProvider, 
+		public GrpcToGrpahQLSchemaGenerator(
+			IServiceProvider serviceProvider,
 			IGraphTypeResolver graphTypeResolver,
 			IGraphTypeConverter graphTypeConverter,
 			IObjectGraphTypeBuilder objectGraphTypeBuilder,
@@ -47,15 +49,15 @@
 		/// <summary>
 		///     Dynamically create query arguments.
 		/// </summary>
-		public GraphQLQueryArguments CreateArguments(IEnumerable<ParameterInfo> parameters)
+		public GraphQLQueryArguments CreateArguments(MessageDescriptor parameters)
 		{
 			var arguments = new List<GraphQLQueryArgument>();
 
-			foreach (var parameter in parameters)
-			{
-				var argument = CreateArgument(parameter);
-				arguments.Add(argument);
-			}
+			//foreach (var parameter in parameters)
+			//{
+			var argument = CreateArgument(parameters);
+			arguments.Add(argument);
+			//}
 
 			return new GraphQLQueryArguments(arguments);
 		}
@@ -92,23 +94,16 @@
 			var commonMethods = typeof(object).GetMethods();
 			foreach (var grpcType in types)
 			{
-				var type = this.ExtractBaseType(grpcType, name);
-				foreach (var method in type.GetMethods())
+				var serviceDescriptor = grpcType.GetServiceDescriptor();
+				var methodDescriptors = serviceDescriptor.Methods
+					.Where(x => !x.GetIsInternalOnly())
+					.ToArray();
+
+				foreach (var method in methodDescriptors)
 				{
-					if (commonMethods.Any(x => x.Name == method.Name))
-					{
-						continue;
-					}
-					//var graphRoute = method.GetCustomAttributes(typeof(GraphRouteAttribute), true)
-					//    .OfType<GraphRouteAttribute>()
-					//    .FirstOrDefault();
-
-					//if (graphRoute == null)
-					//    continue;
-
-					var parameters = method.GetParameters();
-					var arguments = CreateArguments(parameters.Take(1));
-					var response = method.ReturnType;
+					var parameters = method.InputType;
+					var arguments = CreateArguments(method.InputType);
+					var response = method.OutputType.ClrType;
 
 					if (response.IsGenericType && response.GetGenericTypeDefinition() == typeof(Task<>))
 						response = response.GenericTypeArguments.First();
@@ -116,16 +111,16 @@
 					var field = new FieldInformation
 					{
 						ServiceName = name,
-						IsMutation = false,
+						IsMutation = method.GetMethodType() == RpcMethodOptions.Types.MethodType.Mutation,
 						Arguments = arguments,
 						Name =
 							!string.IsNullOrWhiteSpace(method.Name)
 								? method.Name
 								: StringHelper.ConvertToCamelCase(method.Name),
 						Response = response,
-						Method = method,
+						//Method = method,
 						Grpc = grpcType,
-						ObsoleteReason = TypeHelper.GetDeprecationReason(method)
+						//ObsoleteReason = TypeHelper.GetDeprecationReason(method)
 					};
 
 					var definition = new FieldDefinition(field, context => ResolveField(context, field));
@@ -141,15 +136,16 @@
 		///     Create schema from the field definitions.
 		/// </summary>
 		public GraphQL.Types.Schema CreateSchema(
+			string name,
 			IEnumerable<FieldDefinition> definitions)
 		{
 			var mutation = new ObjectGraphType
 			{
-				Name = "RootMutations"
+				Name = $"{name}Mutations"
 			};
 			var query = new ObjectGraphType
 			{
-				Name = "RootQueries"
+				Name = $"{name}Queries"
 			};
 
 			foreach (var definition in definitions)
@@ -163,7 +159,7 @@
 					mutation.FieldAsync(
 						type,
 						definition.Field.Name,
-						TypeHelper.GetDescription(definition.Field.Method),
+						definition.Field.Name,
 						definition.Field.Arguments.GetQueryArguments(),
 						definition.Resolve,
 						definition.Field.ObsoleteReason);
@@ -171,7 +167,7 @@
 					query.FieldAsync(
 						type,
 						definition.Field.Name,
-						TypeHelper.GetDescription(definition.Field.Method),
+						definition.Field.Name,
 						definition.Field.Arguments.GetQueryArguments(),
 						definition.Resolve,
 						definition.Field.ObsoleteReason);
@@ -193,7 +189,7 @@
 		/// <returns></returns>
 		public GraphQL.Types.Schema CreateSchema(string name, params Type[] types)
 		{
-			return CreateSchema(CreateDefinitions(name, types));
+			return CreateSchema(name, CreateDefinitions(name, types));
 		}
 
 		/// <summary>
@@ -204,15 +200,15 @@
 			return await this.grpcServiceMethodExecutor.ExecuteServiceMethodAsync(context, field);
 		}
 
-		private GraphQLQueryArgument CreateArgument(ParameterInfo parameter)
+		private GraphQLQueryArgument CreateArgument(MessageDescriptor parameter)
 		{
-			var requestArgumentType = GetGraphQLArgumentType(parameter.ParameterType);
-			var inner =  Activator.CreateInstance(requestArgumentType) as IGraphType;
+			var requestArgumentType = GetGraphQLArgumentType(parameter.ClrType);
+			var inner = Activator.CreateInstance(requestArgumentType) as IGraphType;
 			if (requestArgumentType.GetGenericTypeDefinition() == typeof(InputObjectGraphTypeWrapper<>))
 			{
 				((dynamic)inner).Build(this.objectGraphTypeBuilder);
 			}
-			var argument = new GraphQLQueryArgument(inner, parameter.ParameterType);
+			var argument = new GraphQLQueryArgument(inner, parameter.ClrType);
 			argument.Name = parameter.Name;
 
 			return argument;
@@ -231,12 +227,6 @@
 			var requestArgumentType = typeof(QueryArgument<>).MakeGenericType(requestType);
 
 			return requestArgumentType;
-		}
-
-		private Type ExtractBaseType(Type grpcType, string name)
-		{
-			var type = grpcType.GetNestedType($"{name}Base");
-			return type;
 		}
 	}
 }

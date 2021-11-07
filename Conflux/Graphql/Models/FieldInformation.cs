@@ -24,7 +24,7 @@
 		/// <summary>
 		///     The method information this field is defined from.
 		/// </summary>
-		public MethodInfo Method { get; set; }
+		//public MethodInfo Method { get; set; }
 
 		/// <summary>
 		///     Name of field.
