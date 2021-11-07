@@ -42,5 +42,8 @@
 		public Type Response { get; set; }
 
 		public string ServiceName { get; set; }
+
+		public bool ResponseCachingEnabled { get; set; }
+		public TimeSpan? CacheDuration { get; set; }
 	}
 }

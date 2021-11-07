@@ -108,6 +108,13 @@
 					if (response.IsGenericType && response.GetGenericTypeDefinition() == typeof(Task<>))
 						response = response.GenericTypeArguments.First();
 
+					var responseCacheDuration = method.GetRpcMethodOptions()?.ResponseCacheDuration?.ToTimeSpan() ?? TimeSpan.Zero;
+					var cachingEnabled = responseCacheDuration != TimeSpan.Zero;
+					if (cachingEnabled && method.GetMethodType() != RpcMethodOptions.Types.MethodType.Query)
+					{
+						throw new InvalidOperationException($"Response caching is not allowed for non-query operations like {method.Name}");
+					}
+
 					var field = new FieldInformation
 					{
 						ServiceName = name,
@@ -119,6 +126,8 @@
 								: StringHelper.ConvertToCamelCase(method.Name),
 						Response = response,
 						//Method = method,
+						CacheDuration = responseCacheDuration,
+						ResponseCachingEnabled = cachingEnabled,
 						Grpc = grpcType,
 						//ObsoleteReason = TypeHelper.GetDeprecationReason(method)
 					};

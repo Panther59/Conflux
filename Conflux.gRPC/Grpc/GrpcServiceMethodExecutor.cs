@@ -23,7 +23,17 @@
 		public async Task<object> ExecuteServiceMethodAsync(IResolveFieldContext<object> context, FieldInformation field)
 		{
 			var callOPtions = new CallOptions();
-			var input = this.GetGrpcRequestObject(context, field);
+			object input = null;
+			if (field.Arguments.Count > 0)
+			{
+				input = this.GetGrpcRequestObject(context, field);
+			}
+
+			if (input != null)
+			{
+				
+			}
+
 			var grpcMethodExecutor = this.MethodExecutor(field);
 			var parameters = context.Parameters(field);
 			try
